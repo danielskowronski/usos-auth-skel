@@ -136,14 +136,21 @@ public class USOSwebInteractor {
                 Pattern.quote("<table class='grey' cellspacing='1px' style='margin-top:10px; border: 0'>")+"(.*)"+Pattern.quote("</table>"), Pattern.DOTALL,
                 "username="+USER_LOGIN+"&password="+USER_PWD+"&lt="+loginFormToken+"&_eventId=submit&submit=zaloguj"
         );
-        Pattern p = Pattern.compile("tura_id='(.*?)'");
+        String regPeriod = "";
+        Pattern p = Pattern.compile("rej_kod=(.*?)\\&");
         Matcher m = p.matcher(registratiosnAvailable);
+        m.find();
+        regPeriod = java.net.URLDecoder.decode(m.group(1), "UTF-8");
+
+        p = Pattern.compile("tura_id='(.*?)'");
+        m = p.matcher(registratiosnAvailable);
         List<Integer> ra = new ArrayList<Integer>();
         registratiosnAvailable="";
         while (m.find()){
             ra.add(Integer.valueOf(m.group(1)));
             registratiosnAvailable += m.group(1)+", ";
         }
+        System.out.println("Akttualny okres rejestracji: "+regPeriod);
         System.out.println("Dostępne rejestracje: "+registratiosnAvailable);
 
         User user = new User(indexNumber,factultyCode,ra);
