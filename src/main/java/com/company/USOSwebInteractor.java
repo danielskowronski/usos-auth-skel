@@ -16,9 +16,12 @@ import org.apache.http.util.EntityUtils;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 /**
  * Prototype of USOSweb dirty auth and basic data retrieval.
@@ -26,6 +29,9 @@ import java.util.regex.Pattern;
  */
 public class USOSwebInteractor {
     private static String URL_LOGIN = "https://login.uj.edu.pl/login?service=https%3A%2F%2Fwww.usosweb.uj.edu.pl%2Fkontroler.php%3F_action%3Dlogowaniecas%2Findex&locale=pl";
+    private static String URL_HOME  = "https://www.usosweb.uj.edu.pl/kontroler.php?_action=home/index";
+    private static String URL_REG_LIST = "https://www.usosweb.uj.edu.pl/kontroler.php?_action=news/rejestracje/rejJednostki&jed_org_kod=";
+
     private static String USER_LOGIN = "";
     private static String USER_PWD = "";
 
@@ -100,6 +106,8 @@ public class USOSwebInteractor {
         }
     }
 
+
+
     public static void main(String[] args) throws Exception {
         readAuthStrings();
 
@@ -117,7 +125,30 @@ public class USOSwebInteractor {
                 "username="+USER_LOGIN+"&password="+USER_PWD+"&lt="+loginFormToken+"&_eventId=submit&submit=zaloguj"
                 );
         System.out.println("Numer indeksu: "+indexNumber);
+        String factultyCode = httpQuery(
+                httpclient, URL_HOME, HTTP_TYPE.POST,
+                "katalog2/jednostki/pokazJednostke&kod=(.*?)'", Pattern.DOTALL,
+                "username="+USER_LOGIN+"&password="+USER_PWD+"&lt="+loginFormToken+"&_eventId=submit&submit=zaloguj"
+        );
+        System.out.println("Kod jednostki: "+factultyCode);
+        String registratiosnAvailable = httpQuery(
+                httpclient, URL_REG_LIST+factultyCode, HTTP_TYPE.POST,
+                Pattern.quote("<table class='grey' cellspacing='1px' style='margin-top:10px; border: 0'>")+"(.*)"+Pattern.quote("</table>"), Pattern.DOTALL,
+                "username="+USER_LOGIN+"&password="+USER_PWD+"&lt="+loginFormToken+"&_eventId=submit&submit=zaloguj"
+        );
+        Pattern p = Pattern.compile("tura_id='(.*?)'");
+        Matcher m = p.matcher(registratiosnAvailable);
+        List<Integer> ra = new ArrayList<Integer>();
+        registratiosnAvailable="";
+        while (m.find()){
+            ra.add(Integer.valueOf(m.group(1)));
+            registratiosnAvailable += m.group(1)+", ";
+        }
+        System.out.println("Dostępne rejestracje: "+registratiosnAvailable);
+
+        User user = new User(indexNumber,factultyCode,ra);
 
         httpclient.close();
     }
 }
+
